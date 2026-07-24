@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "appName": "Astronode",
+  "themeId": "astronode-celestial",
+  "connectedCanvas": true,
+  "locales": ["en"],
+  "locale": "en",
+  "device": "iphone",
+  "orientation": "portrait",
+  "appIcon": "/app-icon.png",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "astro_01_home",
+        "layout": "device-bottom",
+        "label": { "en": "DAILY RITUAL" },
+        "headline": { "en": "Your Daily\nCosmic Guidance" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/01-home.png",
+        "transforms": {
+          "device": {
+            "x": 171.5,
+            "y": 820,
+            "width": 977,
+            "height": 1991,
+            "rotation": 0,
+            "zIndex": 3
+          },
+          "caption": {
+            "x": 80,
+            "y": 120,
+            "width": 1160,
+            "height": 520,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
+      },
+      {
+        "id": "astro_02_explore",
+        "layout": "hero",
+        "label": { "en": "ASTRAL FEED" },
+        "headline": { "en": "Explore the\nAstral Feed" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/02-explore.png",
+        "transforms": {
+          "device": {
+            "x": 171.5,
+            "y": 880,
+            "width": 977,
+            "height": 1991,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "astro_03_sync",
+        "layout": "device-bottom",
+        "label": { "en": "YEAR AHEAD" },
+        "headline": { "en": "Know Your\nCosmic Score" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/03-sync-year.png",
+        "inverted": true,
+        "transforms": {
+          "device": {
+            "x": 171.5,
+            "y": 860,
+            "width": 977,
+            "height": 1991,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "astro_04_overview",
+        "layout": "device-top",
+        "label": { "en": "YOUR MAP" },
+        "headline": { "en": "See Your Full\nCosmic Overview" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/04-overview.png",
+        "transforms": {
+          "device": {
+            "x": 200,
+            "y": 180,
+            "width": 920,
+            "height": 1875,
+            "rotation": 0,
+            "zIndex": 3
+          },
+          "caption": {
+            "x": 80,
+            "y": 2100,
+            "width": 1160,
+            "height": 520,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
+      },
+      {
+        "id": "astro_05_relationships",
+        "layout": "device-bottom",
+        "label": { "en": "RELATIONSHIPS" },
+        "headline": { "en": "Find Emotional\n& Mental Harmony" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/05-relationships.png"
+      },
+      {
+        "id": "astro_06_power",
+        "layout": "hero",
+        "label": { "en": "POWER MOVES" },
+        "headline": { "en": "Cosmic Timing\nfor Success" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/06-power-moves.png",
+        "inverted": true
+      },
+      {
+        "id": "astro_07_oracle",
+        "layout": "device-bottom",
+        "label": { "en": "ORACLE" },
+        "headline": { "en": "Ask the Oracle\nAnything" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/07-oracle.png"
+      },
+      {
+        "id": "astro_08_actions",
+        "layout": "device-top",
+        "label": { "en": "QUICK CAPTURE" },
+        "headline": { "en": "Capture Moments\nin Seconds" },
+        "screenshot": "/screenshots/apple/iphone/{locale}/08-quick-actions.png"
+      }
+    ],
+    "ipad": [],
+    "android": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  }
+}
