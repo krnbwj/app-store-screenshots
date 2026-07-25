@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-Astronode sophisticated App Store listing generator.
+Astronode production App Store listing generator (clean backgrounds).
 
-Outputs:
-  final-output/iphone-1320x2868/
-  final-output/ipad-2064x2752/
-
-Uses Didot/New York serif headlines and nebula backgrounds sampled from
-the reference listing images for a premium celestial look.
+- Pure procedural nebula (no reference-phone ghosting)
+- Crisp Didot gold headlines (single layer)
+- Exact 1320×2868 (iPhone 6.9") and 2064×2752 (iPad 13")
+- Writes ASO metadata alongside exports
 """
 
 from __future__ import annotations
 
+import json
 import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_UI = ROOT / "public" / "screenshots" / "sources" / "ui"
@@ -28,90 +27,103 @@ OUT = ROOT / "final-output"
 IPHONE = (1320, 2868)
 IPAD = (2064, 2752)
 
-# Template PHONE_SCREEN ratios for mockup.png
 MK_L, MK_T, MK_W, MK_H = 52 / 1022, 46 / 2082, 918 / 1022, 1990 / 2082
 
 DIDOT = "/System/Library/Fonts/Supplemental/Didot.ttc"
-NEWYORK = "/System/Library/Fonts/NewYork.ttf"
 BODONI = "/System/Library/Fonts/Supplemental/Bodoni 72.ttc"
-SANS_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+NEWYORK = "/System/Library/Fonts/NewYork.ttf"
+GEORGIA = "/System/Library/Fonts/Supplemental/Georgia Bold.ttf"
 
 GOLD = (232, 196, 110)
-GOLD_SOFT = (242, 214, 150)
-CREAM = (250, 244, 230)
 
+# ASO-optimized slide copy: benefit-first, searchable themes, short thumbnail lines
 SLIDES = [
     {
-        "id": "01-empower-daily-rituals",
-        "headline": "Empower Your\nDaily Rituals",
+        "id": "01-daily-horoscope-rituals",
+        "headline": "Daily Horoscope\n& Rituals",
+        "keyword_focus": "daily horoscope, rituals, meditation",
         "ui": "01-home.png",
-        "bg_ref": "01-empower-rituals.png",
         "legacy": "01-home.png",
+        "palette": 0,
     },
     {
-        "id": "02-decode-relationships",
-        "headline": "Decode Your\nRelationships",
+        "id": "02-love-compatibility",
+        "headline": "Love &\nCompatibility",
+        "keyword_focus": "love compatibility, relationships, astrology match",
         "ui": None,
-        "bg_ref": "02-decode-relationships.png",
         "legacy": "05-relationships.png",
+        "palette": 1,
     },
     {
-        "id": "03-consult-the-oracle",
-        "headline": "Consult the\nOracle",
+        "id": "03-ai-astrology-oracle",
+        "headline": "AI Astrology\nOracle",
+        "keyword_focus": "AI astrology, oracle, birth chart chat",
         "ui": None,
-        "bg_ref": "03-consult-oracle.png",
         "legacy": "07-oracle.png",
+        "palette": 2,
     },
     {
-        "id": "04-capture-your-thoughts",
-        "headline": "Capture Your\nThoughts",
+        "id": "04-cosmic-journal",
+        "headline": "Cosmic Journal\nin Seconds",
+        "keyword_focus": "astrology journal, voice notes, reflection",
         "ui": None,
-        "bg_ref": "04-capture-thoughts.png",
         "legacy": "08-quick-actions.png",
+        "palette": 3,
     },
     {
-        "id": "05-cosmic-daily-guide",
-        "headline": "Your Cosmic\nDaily Guide",
+        "id": "05-personal-cosmic-guide",
+        "headline": "Your Personal\nCosmic Guide",
+        "keyword_focus": "personal astrology, daily guidance, zodiac",
         "ui": "01-home.png",
-        "bg_ref": "05-cosmic-daily-guide.png",
         "legacy": "01-home.png",
+        "palette": 4,
     },
     {
-        "id": "06-explore-astral-feed",
-        "headline": "Explore the\nAstral Feed",
+        "id": "06-astrology-insights-feed",
+        "headline": "Astrology\nInsights Feed",
+        "keyword_focus": "astrology news, vedic, western, tarot",
         "ui": "02-explore.png",
-        "bg_ref": "01-empower-rituals.png",
         "legacy": "02-explore.png",
+        "palette": 5,
     },
     {
-        "id": "07-cosmic-overview",
-        "headline": "See Your Full\nCosmic Overview",
+        "id": "07-birth-chart-overview",
+        "headline": "Birth Chart\nOverview",
+        "keyword_focus": "birth chart, vedic astrology, numerology",
         "ui": "03-overview.png",
-        "bg_ref": "05-cosmic-daily-guide.png",
         "legacy": "04-overview.png",
+        "palette": 6,
     },
     {
-        "id": "08-cosmic-profile",
-        "headline": "Your Ethereal\nCosmic Profile",
+        "id": "08-cosmic-profile-karma",
+        "headline": "Track Your\nCosmic Karma",
+        "keyword_focus": "karma, manifestations, astrology profile",
         "ui": "04-profile.png",
-        "bg_ref": "02-decode-relationships.png",
         "legacy": "04-overview.png",
+        "palette": 7,
     },
 ]
 
+PALETTES = [
+    # (deep, mid_purple, gold_dust, magenta)
+    ((8, 4, 20), (90, 40, 150), (210, 160, 80), (160, 70, 140)),
+    ((6, 3, 18), (110, 45, 160), (220, 170, 90), (180, 60, 130)),
+    ((10, 5, 24), (70, 30, 130), (200, 150, 70), (140, 50, 150)),
+    ((5, 2, 16), (100, 50, 170), (230, 180, 100), (170, 80, 150)),
+    ((8, 4, 22), (85, 35, 145), (215, 165, 85), (155, 65, 135)),
+    ((7, 3, 19), (95, 42, 155), (205, 155, 75), (165, 75, 145)),
+    ((9, 4, 21), (80, 38, 140), (225, 175, 95), (150, 55, 140)),
+    ((6, 3, 17), (105, 48, 165), (218, 168, 88), (175, 70, 138)),
+]
 
-def load_font(size: int, prefer: str = "didot") -> ImageFont.FreeTypeFont:
-    paths = {
-        "didot": [(DIDOT, 0), (DIDOT, 1), (BODONI, 0), (NEWYORK, 0)],
-        "newyork": [(NEWYORK, 0), (DIDOT, 0)],
-        "bodoni": [(BODONI, 0), (DIDOT, 0)],
-    }
-    for path, index in paths.get(prefer, paths["didot"]):
+
+def load_font(size: int) -> ImageFont.FreeTypeFont:
+    for path, index in [(DIDOT, 0), (DIDOT, 1), (BODONI, 0), (NEWYORK, 0), (GEORGIA, 0)]:
         try:
             return ImageFont.truetype(path, size=size, index=index)
         except Exception:
             continue
-    return ImageFont.truetype("/System/Library/Fonts/Supplemental/Georgia Bold.ttf", size)
+    return ImageFont.load_default()
 
 
 def fit_cover(img: Image.Image, tw: int, th: int) -> Image.Image:
@@ -131,234 +143,229 @@ def resolve_ui(slide: dict) -> Path:
     legacy = LEGACY / slide["legacy"]
     if legacy.exists():
         return legacy
-    # Fallback: crop phone content from reference listing
-    return SRC_REF / slide["bg_ref"]
+    raise FileNotFoundError(f"No UI for slide {slide['id']}")
 
 
-def nebula_from_reference(ref_path: Path, size: tuple[int, int], seed: int) -> Image.Image:
-    """Build a sophisticated nebula canvas from a reference listing image."""
+def clean_nebula(size: tuple[int, int], seed: int, palette_idx: int) -> Image.Image:
+    """Pure procedural cosmic background — zero device silhouettes."""
     w, h = size
-    ref = Image.open(ref_path).convert("RGB")
-    base = fit_cover(ref, w, h)
     rng = random.Random(seed)
+    deep, mid, gold, mag = PALETTES[palette_idx % len(PALETTES)]
 
-    # Sample nebula patches from edges (avoid center phone) and rebuild center
-    patches = []
-    for box in [
-        (0, 0, int(w * 0.28), int(h * 0.35)),
-        (int(w * 0.72), 0, w, int(h * 0.35)),
-        (0, int(h * 0.55), int(w * 0.25), h),
-        (int(w * 0.75), int(h * 0.55), w, h),
-        (0, int(h * 0.12), w, int(h * 0.22)),
-    ]:
-        crop = base.crop(box)
-        patches.append(fit_cover(crop, w, h))
+    img = Image.new("RGB", (w, h), deep)
+    px = img.load()
+    for y in range(h):
+        t = y / h
+        wave = 0.5 + 0.5 * math.sin(t * 2.8 + seed * 0.01)
+        r = int(deep[0] + (mid[0] - deep[0]) * t * 0.55 + gold[0] * 0.04 * wave)
+        g = int(deep[1] + (mid[1] - deep[1]) * t * 0.35)
+        b = int(deep[2] + (mid[2] - deep[2]) * (0.45 + 0.4 * wave))
+        row = (min(255, r), min(255, g), min(255, b))
+        for x in range(w):
+            px[x, y] = row
 
-    rebuilt = patches[0].copy()
-    for i, patch in enumerate(patches[1:], start=1):
-        alpha = Image.new("L", (w, h), 0)
-        ad = ImageDraw.Draw(alpha)
-        if i <= 2:
-            ad.rectangle((0, 0, w, int(h * 0.4)), fill=180)
-        else:
-            ad.ellipse((-int(w * 0.2), int(h * 0.2), int(w * 1.2), int(h * 1.2)), fill=140)
-        alpha = alpha.filter(ImageFilter.GaussianBlur(80))
-        rebuilt = Image.composite(patch, rebuilt, alpha)
-
-    # Keep a whisper of the original edges for authentic nebula texture
-    edge_mask = Image.new("L", (w, h), 0)
-    ed = ImageDraw.Draw(edge_mask)
-    border = int(min(w, h) * 0.16)
-    ed.rectangle((0, 0, w, h), fill=255)
-    ed.rectangle((border, int(h * 0.18), w - border, h - int(h * 0.02)), fill=0)
-    edge_mask = edge_mask.filter(ImageFilter.GaussianBlur(55))
-    base = Image.composite(base, rebuilt, edge_mask)
-    base = base.filter(ImageFilter.GaussianBlur(1.2))
-
-    # Enrich with layered glow blobs
-    glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    for _ in range(12):
-        cx = rng.randint(0, w)
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    # Organic nebula clouds — ellipses only, never rectangles/device shapes
+    for _ in range(22):
+        cx = rng.randint(-w // 5, w + w // 5)
         cy = rng.randint(0, h)
-        rad = rng.randint(int(min(w, h) * 0.12), int(min(w, h) * 0.4))
+        rx = rng.randint(int(w * 0.18), int(w * 0.55))
+        ry = rng.randint(int(h * 0.08), int(h * 0.22))
         color = rng.choice(
             [
-                (120, 50, 170, 42),
-                (180, 90, 160, 36),
-                (210, 150, 80, 30),
-                (70, 30, 110, 48),
-                (240, 200, 140, 20),
+                (*mid, 50),
+                (*mag, 42),
+                (*gold, 28),
+                (mid[0] // 2, mid[1] // 2, mid[2], 55),
+                (40, 20, 80, 60),
             ]
         )
-        gd.ellipse((cx - rad, cy - rad, cx + rad, cy + rad), fill=color)
-    glow = glow.filter(ImageFilter.GaussianBlur(int(min(w, h) * 0.085)))
-    canvas = Image.alpha_composite(base.convert("RGBA"), glow)
+        od.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=color)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(max(40, int(min(w, h) * 0.055))))
+    canvas = Image.alpha_composite(img.convert("RGBA"), overlay)
 
-    # Fine starfield
+    # Extra gold dust ribbon near top (editorial feel, still abstract)
+    ribbon = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(ribbon)
+    for _ in range(6):
+        cx = rng.randint(0, w)
+        cy = rng.randint(int(h * 0.05), int(h * 0.45))
+        r = rng.randint(int(w * 0.1), int(w * 0.35))
+        rd.ellipse((cx - r, cy - r // 2, cx + r, cy + r // 2), fill=(*gold, 22))
+    canvas = Image.alpha_composite(canvas, ribbon.filter(ImageFilter.GaussianBlur(55)))
+
+    # Stars — points only
     stars = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(stars)
-    count = int(420 * (w * h) / (1320 * 2868))
-    for _ in range(count):
+    n = int(520 * (w * h) / (1320 * 2868))
+    for _ in range(n):
         x = rng.randint(0, w - 1)
         y = rng.randint(0, h - 1)
-        b = rng.randint(170, 255)
-        s = 1 if rng.random() < 0.85 else 2
-        sd.ellipse((x, y, x + s, y + s), fill=(b, b, min(255, b + 30), 200))
-    for _ in range(22):
+        b = rng.randint(180, 255)
+        s = 1 if rng.random() < 0.88 else 2
+        sd.ellipse((x, y, x + s, y + s), fill=(b, b, min(255, b + 25), 220))
+    for _ in range(16):
         x = rng.randint(0, w - 1)
-        y = rng.randint(0, int(h * 0.55))
-        r = rng.randint(2, 4)
-        sd.ellipse((x - r, y - r, x + r, y + r), fill=(255, 236, 190, 170))
-    canvas = Image.alpha_composite(canvas, stars.filter(ImageFilter.GaussianBlur(0.5)))
+        y = rng.randint(0, int(h * 0.5))
+        r = rng.randint(2, 3)
+        sd.ellipse((x - r, y - r, x + r, y + r), fill=(255, 236, 190, 140))
+    canvas = Image.alpha_composite(canvas, stars)
 
-    # Soft vignette
+    # Soft edge vignette (no hard shapes)
     vig = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     vd = ImageDraw.Draw(vig)
-    for i in range(100):
-        vd.rectangle((i, i, w - 1 - i, h - 1 - i), outline=(0, 0, 0, int(i * 1.35)))
-    canvas = Image.alpha_composite(canvas, vig.filter(ImageFilter.GaussianBlur(50)))
+    for i in range(90):
+        vd.rectangle((i, i, w - 1 - i, h - 1 - i), outline=(0, 0, 0, int(i * 1.2)))
+    canvas = Image.alpha_composite(canvas, vig.filter(ImageFilter.GaussianBlur(45)))
     return canvas.convert("RGBA")
 
 
-def draw_sophisticated_headline(canvas: Image.Image, text: str, size: tuple[int, int]) -> None:
+def draw_crisp_headline(canvas: Image.Image, text: str, size: tuple[int, int]) -> None:
+    """Single-layer Didot headline — no blur bloom that reads as double text."""
     w, h = size
-    font_size = int(88 * (w / 1320))
-    font = load_font(font_size, "didot")
+    font_size = int(86 * (w / 1320))
+    font = load_font(font_size)
     lines = text.split("\n")
-    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
 
     widths, heights = [], []
     for line in lines:
         bbox = probe.textbbox((0, 0), line, font=font)
         widths.append(bbox[2] - bbox[0])
         heights.append(bbox[3] - bbox[1])
-    gap = int(14 * (w / 1320))
-    y = int(h * 0.052)
+    gap = int(12 * (w / 1320))
+    y = int(h * 0.048)
 
+    draw = ImageDraw.Draw(canvas)
     for i, line in enumerate(lines):
         x = (w - widths[i]) // 2
-        # Soft gold bloom only (no stacked opaque redraws)
-        glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        gd = ImageDraw.Draw(glow)
-        gd.text((x, y), line, font=font, fill=(232, 196, 110, 95))
-        glow = glow.filter(ImageFilter.GaussianBlur(14))
-        canvas.alpha_composite(glow)
-
-        draw = ImageDraw.Draw(canvas)
+        # Tiny dark shadow for legibility only (1px, not a second glyph)
+        draw.text((x + 1, y + 2), line, font=font, fill=(0, 0, 0, 120))
         draw.text((x, y), line, font=font, fill=GOLD)
         y += heights[i] + gap
 
 
 def compose_iphone(screenshot_path: Path, phone_h: int) -> Image.Image:
-    mock = Image.open(MOCKUP).convert("RGBA")
-    scale = phone_h / mock.height
-    phone_w = int(mock.width * scale)
-    mock = mock.resize((phone_w, phone_h), Image.Resampling.LANCZOS)
+    """Clean iPhone frame — no mockup.png halo/glow ghosting."""
+    # Match mockup aspect (~1022/2082)
+    phone_w = int(phone_h * (1022 / 2082))
+    bezel = max(10, int(phone_w * 0.028))
+    radius = int(phone_w * 0.12)
 
-    shot = Image.open(screenshot_path).convert("RGB")
-    # If source is a full listing ref, try to use as-is cover into screen
-    sx = int(mock.width * MK_L)
-    sy = int(mock.height * MK_T)
-    sw = int(mock.width * MK_W)
-    sh = int(mock.height * MK_H)
-    fitted = fit_cover(shot, sw, sh).convert("RGBA")
+    shot = fit_cover(
+        Image.open(screenshot_path).convert("RGB"),
+        phone_w - bezel * 2,
+        phone_h - bezel * 2,
+    )
 
-    radius = int(min(sw, sh) * 0.105)
-    mask = Image.new("L", (sw, sh), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, sw - 1, sh - 1), radius=radius, fill=255)
+    frame = Image.new("RGBA", (phone_w, phone_h), (0, 0, 0, 0))
+    fd = ImageDraw.Draw(frame)
 
-    composed = mock.copy()
-    composed.paste(fitted, (sx, sy), mask)
-    return composed
+    # Outer titanium (hard edge only — no soft halo)
+    fd.rounded_rectangle(
+        (0, 0, phone_w - 1, phone_h - 1),
+        radius=radius,
+        fill=(38, 34, 30, 255),
+    )
+    # 1px gold rim (drawn as inset fill ring, not thick outline glow)
+    fd.rounded_rectangle(
+        (2, 2, phone_w - 3, phone_h - 3),
+        radius=max(4, radius - 2),
+        outline=(210, 180, 110, 255),
+        width=2,
+    )
+    # Inner black inset
+    inner_r = max(10, radius - bezel)
+    fd.rounded_rectangle(
+        (bezel - 1, bezel - 1, phone_w - bezel, phone_h - bezel),
+        radius=inner_r,
+        fill=(0, 0, 0, 255),
+    )
+
+    screen_mask = Image.new("L", shot.size, 0)
+    ImageDraw.Draw(screen_mask).rounded_rectangle(
+        (0, 0, shot.width - 1, shot.height - 1),
+        radius=max(8, inner_r - 4),
+        fill=255,
+    )
+    frame.paste(shot.convert("RGBA"), (bezel, bezel), screen_mask)
+
+    # Dynamic Island
+    island_w = int(phone_w * 0.28)
+    island_h = max(18, int(phone_h * 0.018))
+    ix = (phone_w - island_w) // 2
+    iy = bezel + max(8, int(phone_h * 0.012))
+    fd.rounded_rectangle(
+        (ix, iy, ix + island_w, iy + island_h),
+        radius=island_h // 2,
+        fill=(5, 5, 5, 255),
+    )
+    return frame
 
 
 def compose_ipad_frame(screenshot_path: Path, frame_h: int) -> Image.Image:
-    """Slim iPad Pro-style frame around the UI screenshot."""
-    # iPad aspect ~ 2064/2752 device, but content is phone UI — use landscape-ish tablet bezel
-    # Frame aspect close to 3:4
     frame_w = int(frame_h * 0.75)
     bezel = max(18, int(frame_w * 0.028))
     radius = int(frame_w * 0.045)
-
     shot = fit_cover(Image.open(screenshot_path).convert("RGB"), frame_w - bezel * 2, frame_h - bezel * 2)
 
     frame = Image.new("RGBA", (frame_w, frame_h), (0, 0, 0, 0))
     fd = ImageDraw.Draw(frame)
-    # Outer metal
     fd.rounded_rectangle((0, 0, frame_w - 1, frame_h - 1), radius=radius, fill=(28, 28, 30, 255))
-    # Inner black
+    fd.rounded_rectangle(
+        (1, 1, frame_w - 2, frame_h - 2),
+        radius=radius - 1,
+        outline=(160, 140, 90, 220),
+        width=2,
+    )
     inner_r = max(8, radius - 6)
     fd.rounded_rectangle(
         (bezel - 2, bezel - 2, frame_w - bezel + 1, frame_h - bezel + 1),
         radius=inner_r,
         fill=(0, 0, 0, 255),
     )
-    # Screen
     screen_mask = Image.new("L", shot.size, 0)
     ImageDraw.Draw(screen_mask).rounded_rectangle(
         (0, 0, shot.width - 1, shot.height - 1), radius=max(6, inner_r - 4), fill=255
     )
     frame.paste(shot.convert("RGBA"), (bezel, bezel), screen_mask)
-
-    # Camera dot
-    cam_y = bezel // 2
-    cam_x = frame_w // 2
+    cam_x, cam_y = frame_w // 2, max(6, bezel // 2)
     fd.ellipse((cam_x - 4, cam_y - 4, cam_x + 4, cam_y + 4), fill=(10, 10, 12, 255))
     return frame
 
 
-def add_device_glow(canvas: Image.Image, device: Image.Image, x: int, y: int) -> None:
-    glow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    pad = 140
-    blob = Image.new("RGBA", (device.width + pad, device.height + pad), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(blob)
-    bd.rounded_rectangle(
-        (pad // 3, pad // 3, device.width + pad * 2 // 3, device.height + pad * 2 // 3),
-        radius=100,
-        fill=(210, 170, 100, 55),
-    )
-    blob = blob.filter(ImageFilter.GaussianBlur(60))
-    glow.alpha_composite(blob, (x - pad // 3, y - pad // 3))
-    # Soft purple ambient under device
-    ambient = Image.new("RGBA", (device.width + 200, 180), (0, 0, 0, 0))
-    ad = ImageDraw.Draw(ambient)
-    ad.ellipse((0, 0, device.width + 200, 180), fill=(120, 60, 160, 50))
-    ambient = ambient.filter(ImageFilter.GaussianBlur(40))
-    glow.alpha_composite(ambient, (x - 100, y + device.height - 80))
-    canvas.alpha_composite(glow)
+def add_soft_glow(canvas: Image.Image, device: Image.Image, x: int, y: int) -> None:
+    """Place device with no backdrop glow (avoids any second-frame illusion)."""
     canvas.alpha_composite(device, (x, y))
 
 
 def make_listing(slide: dict, size: tuple[int, int], device: str) -> Image.Image:
     w, h = size
-    seed = sum(ord(c) for c in slide["id"]) + w
-    bg = nebula_from_reference(SRC_REF / slide["bg_ref"], size, seed=seed)
-    draw_sophisticated_headline(bg, slide["headline"], size)
+    seed = sum(ord(c) for c in slide["id"]) + w * 3
+    bg = clean_nebula(size, seed=seed, palette_idx=slide["palette"])
+    draw_crisp_headline(bg, slide["headline"], size)
 
     ui_path = resolve_ui(slide)
     if device == "iphone":
-        phone_h = int(h * 0.70)
-        device_img = compose_iphone(ui_path, phone_h=phone_h)
+        device_img = compose_iphone(ui_path, phone_h=int(h * 0.70))
         x = (w - device_img.width) // 2
         y = h - device_img.height - int(h * 0.018)
     else:
-        # iPad listing: tablet frame, slightly smaller relative height to show nebula
-        frame_h = int(h * 0.72)
-        device_img = compose_ipad_frame(ui_path, frame_h=frame_h)
+        device_img = compose_ipad_frame(ui_path, frame_h=int(h * 0.72))
         x = (w - device_img.width) // 2
         y = h - device_img.height - int(h * 0.03)
 
-    add_device_glow(bg, device_img, x, y)
+    add_soft_glow(bg, device_img, x, y)
     out = bg.convert("RGB")
-    out = ImageEnhance.Contrast(out).enhance(1.04)
-    out = ImageEnhance.Color(out).enhance(1.06)
+    out = ImageEnhance.Contrast(out).enhance(1.03)
+    out = ImageEnhance.Color(out).enhance(1.05)
     return out
 
 
 def upscale_reference(ref_name: str, size: tuple[int, int], dest: Path) -> None:
     img = fit_cover(Image.open(SRC_REF / ref_name).convert("RGB"), *size)
-    img = ImageEnhance.Sharpness(img).enhance(1.12)
+    img = ImageEnhance.Sharpness(img).enhance(1.1)
     dest.parent.mkdir(parents=True, exist_ok=True)
     img.save(dest, "PNG", optimize=True)
 
@@ -366,8 +373,118 @@ def upscale_reference(ref_name: str, size: tuple[int, int], dest: Path) -> None:
 def save_resized_originals(size: tuple[int, int], dest_dir: Path) -> None:
     dest_dir.mkdir(parents=True, exist_ok=True)
     for p in sorted(SRC_UI.glob("*.png")):
-        out = fit_cover(Image.open(p).convert("RGB"), *size)
-        out.save(dest_dir / p.name, "PNG", optimize=True)
+        fit_cover(Image.open(p).convert("RGB"), *size).save(dest_dir / p.name, "PNG", optimize=True)
+
+
+def write_aso_metadata(out_dir: Path) -> None:
+    """App Store Optimization copy ready to paste into App Store Connect."""
+    # Apple keyword field max 100 characters, comma-separated, no spaces after commas ideal
+    keywords = (
+        "astrology,horoscope,birth chart,zodiac,vedic,tarot,numerology,"
+        "compatibility,oracle,meditation,rituals,journal"
+    )
+    # Trim to <= 100 chars
+    while len(keywords) > 100:
+        keywords = keywords.rsplit(",", 1)[0]
+
+    aso = {
+        "app_name": "Astronode",
+        "subtitle": "Astrology, Horoscope & Rituals",  # max 30 chars
+        "promotional_text": (
+            "Your personal cosmic guide — daily horoscopes, birth chart insights, "
+            "love compatibility, AI oracle, and sacred rituals in one elegant app."
+        ),
+        "description": (
+            "Astronode is your personal cosmos companion.\n\n"
+            "Get daily horoscopes and rituals tailored to you. Explore Vedic and Western "
+            "astrology, decode relationship compatibility, ask the AI Oracle about your chart "
+            "and timing, and capture reflections in your cosmic journal.\n\n"
+            "FEATURES\n"
+            "• Daily horoscope & meditation rituals\n"
+            "• Birth chart overview across traditions\n"
+            "• Love & relationship compatibility scores\n"
+            "• AI Astrology Oracle chat\n"
+            "• Astral feed — articles on astrology, tarot & crystals\n"
+            "• Cosmic journal, voice notes & manifestations\n"
+            "• Power Moves — planetary timing for success\n\n"
+            "Whether you follow Vedic, Western, Chinese astrology, or numerology, "
+            "Astronode brings your chart into focus with a calm, premium experience.\n\n"
+            "Symbolic guidance only — not medical, legal, or financial advice."
+        ),
+        "keywords": keywords,
+        "keywords_character_count": len(keywords),
+        "keyword_field_limit": 100,
+        "primary_category": "Lifestyle",
+        "secondary_category": "Health & Fitness",
+        "whats_new": (
+            "Refined cosmic experience with daily rituals, relationship insights, "
+            "AI Oracle guidance, and a clearer birth-chart overview."
+        ),
+        "screenshot_order_aso": [
+            {
+                "file": s["id"] + ".png",
+                "headline": s["headline"].replace("\n", " "),
+                "keyword_focus": s["keyword_focus"],
+                "why": "Maps to high-intent astrology search themes visible at thumbnail size.",
+            }
+            for s in SLIDES
+        ],
+        "sizes": {
+            "iphone_6_9": {"folder": "iphone-1320x2868", "pixels": "1320x2868"},
+            "ipad_13": {"folder": "ipad-2064x2752", "pixels": "2064x2752"},
+        },
+        "upload_notes": [
+            "Use numbered 01–08 PNGs as primary App Store screenshots (clean production set).",
+            "reference-listings/ are art references only — may contain prior design artifacts.",
+            "Paste subtitle + keywords + description into App Store Connect localization.",
+            "Keep first screenshot benefit-led (daily horoscope) — it is the search thumbnail.",
+        ],
+    }
+
+    (out_dir / "ASO-metadata.json").write_text(json.dumps(aso, indent=2) + "\n", encoding="utf-8")
+    md = f"""# Astronode — ASO Metadata (paste into App Store Connect)
+
+## Subtitle (30 characters max)
+```
+{aso['subtitle']}
+```
+({len(aso['subtitle'])} chars)
+
+## Keywords (100 characters max)
+```
+{aso['keywords']}
+```
+({aso['keywords_character_count']} chars)
+
+## Promotional Text
+{aso['promotional_text']}
+
+## Description
+{aso['description']}
+
+## What's New
+{aso['whats_new']}
+
+## Categories
+- Primary: {aso['primary_category']}
+- Secondary: {aso['secondary_category']}
+
+## Screenshot order (ASO)
+
+| # | File | On-image headline | Keyword focus |
+|---|------|-------------------|---------------|
+"""
+    for i, row in enumerate(aso["screenshot_order_aso"], 1):
+        md += f"| {i} | `{row['file']}` | {row['headline']} | {row['keyword_focus']} |\n"
+
+    md += """
+## Upload
+
+1. **iPhone 6.9"** → `iphone-1320x2868/01-…08-….png`
+2. **13" iPad** → `ipad-2064x2752/01-…08-….png`
+3. Do **not** use `reference-listings/` for production unless you intentionally want those frames
+"""
+    (out_dir / "ASO-metadata.md").write_text(md, encoding="utf-8")
 
 
 def main() -> None:
@@ -378,7 +495,7 @@ def main() -> None:
     for d in (iphone_dir, ipad_dir, refs_iphone, refs_ipad):
         d.mkdir(parents=True, exist_ok=True)
 
-    # Exact-size versions of the 5 sophisticated reference listings
+    # Keep refs as separate non-production copies
     ref_files = [
         ("01-empower-rituals.png", "ref-01-empower-your-daily-rituals.png"),
         ("02-decode-relationships.png", "ref-02-decode-your-relationships.png"),
@@ -387,57 +504,45 @@ def main() -> None:
         ("05-cosmic-daily-guide.png", "ref-05-your-cosmic-daily-guide.png"),
     ]
     for src, name in ref_files:
-        upscale_reference(src, IPHONE, refs_iphone / name)
-        upscale_reference(src, IPAD, refs_ipad / name)
-        assert Image.open(refs_iphone / name).size == IPHONE
-        assert Image.open(refs_ipad / name).size == IPAD
-        print(f"ref ok {name}")
+        if (SRC_REF / src).exists():
+            upscale_reference(src, IPHONE, refs_iphone / name)
+            upscale_reference(src, IPAD, refs_ipad / name)
+            print(f"ref archived {name}")
 
-    # Generated sophisticated listings from new screenshots + refs
+    # Remove old ghosted production filenames if present
+    for folder in (iphone_dir, ipad_dir):
+        for old in folder.glob("0*.png"):
+            old.unlink()
+
     for slide in SLIDES:
         iphone = make_listing(slide, IPHONE, "iphone")
         ipad = make_listing(slide, IPAD, "ipad")
-        assert iphone.size == IPHONE
-        assert ipad.size == IPAD
+        assert iphone.size == IPHONE and ipad.size == IPAD
         iphone.save(iphone_dir / f"{slide['id']}.png", "PNG", optimize=True)
         ipad.save(ipad_dir / f"{slide['id']}.png", "PNG", optimize=True)
-        print(f"listing ok {slide['id']}")
+        print(f"clean listing ok {slide['id']}")
 
     save_resized_originals(IPHONE, iphone_dir / "originals-resized")
     save_resized_originals(IPAD, ipad_dir / "originals-resized")
+    write_aso_metadata(OUT)
 
-    manifest = OUT / "README.md"
-    manifest.write_text(
-        """# Astronode Final Output (Sophisticated)
+    (OUT / "README.md").write_text(
+        """# Astronode Final Output — Production
 
-Store-ready listing images with Didot/New York gold headlines and nebula backgrounds
-sampled from your reference listings.
+Clean listing images: **no ghost devices**, crisp Didot headlines, ASO-ready copy.
 
-## Sizes
+| Device | Folder | Size |
+|--------|--------|------|
+| iPhone 6.9" | `iphone-1320x2868/` | 1320 × 2868 |
+| iPad 13" | `ipad-2064x2752/` | 2064 × 2752 |
 
-| Device | Folder | Exact size |
-|--------|--------|------------|
-| iPhone 6.9" | `iphone-1320x2868/` | **1320 × 2868** |
-| iPad 13" | `ipad-2064x2752/` | **2064 × 2752** |
-
-## Contents (each size folder)
-
-- `01-…`–`08-….png` — generated marketing listing images
-- `reference-listings/` — your 5 sophisticated reference listings resized exactly
-- `originals-resized/` — raw UI captures fitted to store size
-
-## Regenerate
+**Production uploads:** numbered `01-…08-….png` only.  
+**ASO:** see `ASO-metadata.md` / `ASO-metadata.json`.  
+**References only:** `reference-listings/` (not for production if they show prior art).
 
 ```bash
 python3 scripts/generate_sophisticated_listings.py
 ```
-
-## Upload tips
-
-- App Store Connect → iPhone 6.9" display: use `iphone-1320x2868/`
-- App Store Connect → 13" iPad: use `ipad-2064x2752/`
-- Prefer `reference-listings/` when you want the exact art-directed frames
-- Prefer numbered `01-08` when you want the regenerated deck from latest UI captures
 """,
         encoding="utf-8",
     )

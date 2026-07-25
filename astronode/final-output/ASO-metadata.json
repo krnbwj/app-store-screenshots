@@ -1,0 +1,78 @@
+{
+  "app_name": "Astronode",
+  "subtitle": "Astrology, Horoscope & Rituals",
+  "promotional_text": "Your personal cosmic guide \u2014 daily horoscopes, birth chart insights, love compatibility, AI oracle, and sacred rituals in one elegant app.",
+  "description": "Astronode is your personal cosmos companion.\n\nGet daily horoscopes and rituals tailored to you. Explore Vedic and Western astrology, decode relationship compatibility, ask the AI Oracle about your chart and timing, and capture reflections in your cosmic journal.\n\nFEATURES\n\u2022 Daily horoscope & meditation rituals\n\u2022 Birth chart overview across traditions\n\u2022 Love & relationship compatibility scores\n\u2022 AI Astrology Oracle chat\n\u2022 Astral feed \u2014 articles on astrology, tarot & crystals\n\u2022 Cosmic journal, voice notes & manifestations\n\u2022 Power Moves \u2014 planetary timing for success\n\nWhether you follow Vedic, Western, Chinese astrology, or numerology, Astronode brings your chart into focus with a calm, premium experience.\n\nSymbolic guidance only \u2014 not medical, legal, or financial advice.",
+  "keywords": "astrology,horoscope,birth chart,zodiac,vedic,tarot,numerology,compatibility,oracle,meditation",
+  "keywords_character_count": 93,
+  "keyword_field_limit": 100,
+  "primary_category": "Lifestyle",
+  "secondary_category": "Health & Fitness",
+  "whats_new": "Refined cosmic experience with daily rituals, relationship insights, AI Oracle guidance, and a clearer birth-chart overview.",
+  "screenshot_order_aso": [
+    {
+      "file": "01-daily-horoscope-rituals.png",
+      "headline": "Daily Horoscope & Rituals",
+      "keyword_focus": "daily horoscope, rituals, meditation",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "02-love-compatibility.png",
+      "headline": "Love & Compatibility",
+      "keyword_focus": "love compatibility, relationships, astrology match",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "03-ai-astrology-oracle.png",
+      "headline": "AI Astrology Oracle",
+      "keyword_focus": "AI astrology, oracle, birth chart chat",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "04-cosmic-journal.png",
+      "headline": "Cosmic Journal in Seconds",
+      "keyword_focus": "astrology journal, voice notes, reflection",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "05-personal-cosmic-guide.png",
+      "headline": "Your Personal Cosmic Guide",
+      "keyword_focus": "personal astrology, daily guidance, zodiac",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "06-astrology-insights-feed.png",
+      "headline": "Astrology Insights Feed",
+      "keyword_focus": "astrology news, vedic, western, tarot",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "07-birth-chart-overview.png",
+      "headline": "Birth Chart Overview",
+      "keyword_focus": "birth chart, vedic astrology, numerology",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    },
+    {
+      "file": "08-cosmic-profile-karma.png",
+      "headline": "Track Your Cosmic Karma",
+      "keyword_focus": "karma, manifestations, astrology profile",
+      "why": "Maps to high-intent astrology search themes visible at thumbnail size."
+    }
+  ],
+  "sizes": {
+    "iphone_6_9": {
+      "folder": "iphone-1320x2868",
+      "pixels": "1320x2868"
+    },
+    "ipad_13": {
+      "folder": "ipad-2064x2752",
+      "pixels": "2064x2752"
+    }
+  },
+  "upload_notes": [
+    "Use numbered 01\u201308 PNGs as primary App Store screenshots (clean production set).",
+    "reference-listings/ are art references only \u2014 may contain prior design artifacts.",
+    "Paste subtitle + keywords + description into App Store Connect localization.",
+    "Keep first screenshot benefit-led (daily horoscope) \u2014 it is the search thumbnail."
+  ]
+}
