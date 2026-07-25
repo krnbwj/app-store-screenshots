@@ -1,0 +1,18 @@
+Astronode App Store assets — exact 1320 x 2868 px
+
+Reference listing images (from your style references):
+  ref-01-explore-the-astral-feed.png
+  ref-02-know-your-cosmic-score.png
+
+Generated listing images (marketing frames from originals):
+  01-daily-guidance.png  ← Your Daily / Cosmic Guidance
+  02-astral-feed.png  ← Explore the / Astral Feed
+  03-cosmic-score.png  ← Know Your / Cosmic Score
+  04-cosmic-overview.png  ← See Your Full / Cosmic Overview
+  05-relationships.png  ← Find Emotional / & Mental Harmony
+  06-power-moves.png  ← Cosmic Timing / for Success
+  07-oracle.png  ← Ask the Oracle / Anything
+  08-quick-actions.png  ← Capture Moments / in Seconds
+
+Resized originals (UI-only, no marketing frame):
+  originals-resized/*.png
