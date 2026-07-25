@@ -166,36 +166,29 @@ def clean_nebula(size: tuple[int, int], seed: int, palette_idx: int) -> Image.Im
 
     overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
-    # Organic nebula clouds — ellipses only, never rectangles/device shapes
-    for _ in range(22):
-        cx = rng.randint(-w // 5, w + w // 5)
+    # Organic nebula clouds — soft ellipses only, keep them irregular / off-center
+    for _ in range(28):
+        cx = rng.randint(-w // 4, w + w // 4)
         cy = rng.randint(0, h)
-        rx = rng.randint(int(w * 0.18), int(w * 0.55))
-        ry = rng.randint(int(h * 0.08), int(h * 0.22))
+        rx = rng.randint(int(w * 0.12), int(w * 0.42))
+        ry = rng.randint(int(h * 0.05), int(h * 0.14))
+        # Avoid a single centered blob that can look like a device card
+        if abs(cx - w / 2) < w * 0.12 and abs(cy - h * 0.25) < h * 0.12:
+            cx += rng.choice([-1, 1]) * int(w * 0.2)
         color = rng.choice(
             [
-                (*mid, 50),
-                (*mag, 42),
-                (*gold, 28),
-                (mid[0] // 2, mid[1] // 2, mid[2], 55),
-                (40, 20, 80, 60),
+                (*mid, 48),
+                (*mag, 40),
+                (*gold, 24),
+                (mid[0] // 2, mid[1] // 2, mid[2], 52),
+                (40, 20, 80, 58),
             ]
         )
         od.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=color)
     overlay = overlay.filter(ImageFilter.GaussianBlur(max(40, int(min(w, h) * 0.055))))
     canvas = Image.alpha_composite(img.convert("RGBA"), overlay)
 
-    # Extra gold dust ribbon near top (editorial feel, still abstract)
-    ribbon = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    rd = ImageDraw.Draw(ribbon)
-    for _ in range(6):
-        cx = rng.randint(0, w)
-        cy = rng.randint(int(h * 0.05), int(h * 0.45))
-        r = rng.randint(int(w * 0.1), int(w * 0.35))
-        rd.ellipse((cx - r, cy - r // 2, cx + r, cy + r // 2), fill=(*gold, 22))
-    canvas = Image.alpha_composite(canvas, ribbon.filter(ImageFilter.GaussianBlur(55)))
-
-    # Stars — points only
+    # Stars — points only (no ribbon/panel shapes that can read as a device ghost)
     stars = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(stars)
     n = int(520 * (w * h) / (1320 * 2868))
@@ -212,17 +205,17 @@ def clean_nebula(size: tuple[int, int], seed: int, palette_idx: int) -> Image.Im
         sd.ellipse((x - r, y - r, x + r, y + r), fill=(255, 236, 190, 140))
     canvas = Image.alpha_composite(canvas, stars)
 
-    # Soft edge vignette (no hard shapes)
+    # Very light edge vignette only (keep center free of panel-shaped shading)
     vig = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     vd = ImageDraw.Draw(vig)
-    for i in range(90):
-        vd.rectangle((i, i, w - 1 - i, h - 1 - i), outline=(0, 0, 0, int(i * 1.2)))
-    canvas = Image.alpha_composite(canvas, vig.filter(ImageFilter.GaussianBlur(45)))
+    for i in range(60):
+        vd.rectangle((i, i, w - 1 - i, h - 1 - i), outline=(0, 0, 0, int(i * 0.7)))
+    canvas = Image.alpha_composite(canvas, vig.filter(ImageFilter.GaussianBlur(40)))
     return canvas.convert("RGBA")
 
 
 def draw_crisp_headline(canvas: Image.Image, text: str, size: tuple[int, int]) -> None:
-    """Single-layer Didot headline — no blur bloom that reads as double text."""
+    """Single-layer Didot headline — no blur bloom, no offset ghost."""
     w, h = size
     font_size = int(86 * (w / 1320))
     font = load_font(font_size)
@@ -240,8 +233,6 @@ def draw_crisp_headline(canvas: Image.Image, text: str, size: tuple[int, int]) -
     draw = ImageDraw.Draw(canvas)
     for i, line in enumerate(lines):
         x = (w - widths[i]) // 2
-        # Tiny dark shadow for legibility only (1px, not a second glyph)
-        draw.text((x + 1, y + 2), line, font=font, fill=(0, 0, 0, 120))
         draw.text((x, y), line, font=font, fill=GOLD)
         y += heights[i] + gap
 
